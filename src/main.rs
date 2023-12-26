@@ -17,11 +17,7 @@ async fn main() -> Result<(), std::io::Error> {
             "/f",
             StaticFilesEndpoint::new("/Uploadstr/files")
         )
-        .with(
-            Cors::new()
-                .allow_credentials(true)
-                .allow_origin("http://localhost:5173")
-        );
+        .with(Cors::new().allow_credentials(true));
 
     Server::new(TcpListener::bind("0.0.0.0:3000"))
       .run(app)
