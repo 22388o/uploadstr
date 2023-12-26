@@ -4,7 +4,7 @@ Static file server that allows for uploading files, viewing a list of uploaded f
 ### TODOs
 - [x] Statically serve files from URLs
 - [ ] Document API endpoints.
-- [ ] Uploading files with Nostr auth (NIP-98)
+- [x] Uploading files with Nostr auth (NIP-98)
 - [ ] Get a list of files with Nostr auth (NIP-98)
 - [ ] Config file
 - [ ] Docker/Podman container
