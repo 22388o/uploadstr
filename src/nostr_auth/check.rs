@@ -7,14 +7,19 @@ use nostr::event::Event;
 use nostr::UncheckedUrl;
 use std::ops::Add;
 use nostr::event::tag::TagKind;
+use nostr::prelude::key::XOnlyPublicKey;
+use std::str::FromStr;
 
 use crypto::sha2::Sha256;
 use crypto::digest::Digest;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use base64::Engine;
 
+use crate::config::get_config_value;
+use crate::config::get_config_values;
+
 pub fn check_file_auth(event: &Event, data: &Vec<u8>) -> Result<String> {
-        check_auth(event)?;
+        check_auth(event, HttpMethod::POST, "/upload")?;
 
         let mut payloads =
             event
@@ -126,13 +131,30 @@ pub fn check_file_auth(event: &Event, data: &Vec<u8>) -> Result<String> {
 
 }
 
-pub fn check_auth(event: &Event) -> Result<()> {
+pub fn check_auth(event: &Event, method: HttpMethod, path: &str) -> Result<()> {
     event
         .verify()
         .map_err(|_| Error::from_string(
             "EventId/Signature are not valid...",
             StatusCode::UNAUTHORIZED
         ))?;
+
+    let whitelistedPubkeys = get_config_values("pubkeyWhitelist")?
+        .into_iter()
+        .map(
+            |pubkey| XOnlyPublicKey::from_str(&pubkey)
+        )
+        .flatten()
+        .collect::<Vec<XOnlyPublicKey>>();
+
+    if !whitelistedPubkeys.contains(&event.pubkey) {
+        return Err(
+            Error::from_string(
+                "Given pubkey is not in list of whitelisted pubkeys.",
+                StatusCode::UNAUTHORIZED
+            )
+        );
+    }
 
     if event.kind != Kind::HttpAuth {
         return Err(
@@ -171,7 +193,9 @@ pub fn check_auth(event: &Event) -> Result<()> {
             }
         );
 
-    if Some(UncheckedUrl::from("http://0.0.0.0:3000/upload")) != urls.nth(0).cloned()
+    let baseUrl = get_config_value("baseUrl")?;
+
+    if Some(UncheckedUrl::from(format!("{}{}", baseUrl, path))) != urls.nth(0).cloned()
         || urls.nth(0).is_some() // Checks for multiple u tags...
     {
         return Err(
@@ -193,12 +217,12 @@ pub fn check_auth(event: &Event) -> Result<()> {
         );
 
 
-    if Some(HttpMethod::POST) != methods.nth(0).cloned()
+    if Some(method) != methods.nth(0).cloned()
         || methods.nth(0).is_some() // Checks for multiple method tags...
     {
         return Err(
             Error::from_string(
-                "The method tag is not POST or there are multiple method tags",
+                "The method tag is not what was used or there are multiple method tags",
                 StatusCode::UNAUTHORIZED
             )
         );
