@@ -12,6 +12,12 @@ use endpoints::upload_file;
 use endpoints::list_files;
 use config::get_config_value;
 
+// Use Jemalloc only for musl-64 bits platforms
+#[cfg(all(target_env = "musl", target_pointer_width = "64"))]
+#[global_allocator]
+static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
+
+
 #[tokio::main]
 async fn main() -> () {
     let filesDir = get_config_value("filesDir").unwrap();

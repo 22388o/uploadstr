@@ -6,7 +6,8 @@ Static file server that allows for uploading files, viewing a list of uploaded f
 - [ ] Document API endpoints.
 - [x] Uploading files with Nostr auth (NIP-98)
 - [x] Get a list of files with Nostr auth (NIP-98)
+- [ ] Allow removing a file with Nostr auth (NIP-98)
 - [x] Add a pubkey whitelist
 - [x] Config file
-- [ ] Docker/Podman container
+- [x] Docker container
 - [ ] Add unit tests
