@@ -1,0 +1,73 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  pipeline:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: aarch64-unknown-linux-gnu
+            bin: uploadstr
+            name: uploadstr-aarch64-unknown-linux-gnu
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            bin: uploadstr
+            name: uploadstr-x86_64-unknown-linux-gnu
+            
+          - os: windows-latest
+            target: x86_64-pc-windows-gnu
+            bin: uploadstr.exe
+            name: uploadstr-x86_64-pc-windows-gnu.exe
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            bin: uploadstr.exe
+            name: uploadstr-x86_64-pc-windows-msvc.exe            
+          - os: windows-latest
+            target: aarch64-pc-windows-msvc
+            bin: uploadstr.exe
+            name: uploadstr-aarch64-pc-windows-msvc.exe
+            
+          - os: macOS-latest
+            target: x86_64-apple-darwin
+            bin: uploadstr
+            name: uploadstr-x86_64-apple-darwin
+          - os: macOS-latest
+            target: aarch64-apple-darwin
+            bin: uploadstr
+            name: uploadstr-aarch64-apple-darwin
+            
+    name: ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    env:
+      RUST_BACKTRACE: full
+      SCCACHE_GHA_ENABLED: "true"
+      RUSTC_WRAPPER: "sccache"
+    steps:
+      - uses: actions/checkout@v3
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.3
+      - name: Test
+        run: cargo test --no-fail-fast --future-incompat-report
+      - name: Lint
+        run: cargo clippy -- -D warnings 
+      - name: Build
+        run: cargo build -r
+      - name: Rename output
+        run: mv target/release/${{matrix.bin}} target/release/${{matrix.name}}
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        if: github.ref == 'refs/heads/master'
+        with:
+          files: |
+            target/release/${{ matrix.name }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
