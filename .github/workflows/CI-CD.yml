@@ -70,5 +70,3 @@ jobs:
         with:
           files: |
             target/release/${{ matrix.name }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
